@@ -23,6 +23,7 @@ import (
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
 
+	"yunion.io/x/onecloud/pkg/appctx"
 	"yunion.io/x/onecloud/pkg/appsrv"
 	"yunion.io/x/onecloud/pkg/httperrors"
 	"yunion.io/x/onecloud/pkg/mcclient"
@@ -69,6 +70,22 @@ func (f *ResourceHandlers) AddGet(mf appsrv.MiddlewareFunc) *ResourceHandlers {
 		// list in 2 context
 		NewHP(f.listInContextsHandler, APIVer, ResName, ResID, ResName2, ResID2, ResName3),
 	}
+	f.AddByMethod(GET, mf, hs...)
+	return f
+}
+
+func (f *ResourceHandlers) AddListWithResNames(mf appsrv.MiddlewareFunc, resNames ...string) *ResourceHandlers {
+	hs := make([]HandlerPath, 0)
+	for _, resName := range resNames {
+		hs = append(hs, NewHP(func(rn string) handleFunc {
+			return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+				params := appctx.AppContextParams(ctx)
+				params[ResName] = rn
+				f.listHandler(ctx, w, r)
+			}
+		}(resName), APIVer, resName))
+	}
+
 	f.AddByMethod(GET, mf, hs...)
 	return f
 }

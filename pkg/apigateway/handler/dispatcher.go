@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"time"
 
 	"yunion.io/x/onecloud/pkg/appsrv"
 )
@@ -52,6 +53,14 @@ func (h SHandler) Bind(app *appsrv.Application) {
 		f = h.MiddlewareFunc(f)
 	}
 	app.AddHandler(h.Method, h.Prefix, f)
+}
+
+func (h SHandler) BindWithProcessTimeout(app *appsrv.Application, timeout time.Duration) {
+	f := h.HandleFunc
+	if h.MiddlewareFunc != nil {
+		f = h.MiddlewareFunc(f)
+	}
+	app.AddHandler(h.Method, h.Prefix, f).SetProcessTimeout(timeout)
 }
 
 func NewMethodHandlerFactory(method string, mf appsrv.MiddlewareFunc, prefix string) func(handleFunc, ...string) SHandler {
@@ -96,6 +105,12 @@ func (f *SHandlers) AddByMethod(method string, mf appsrv.MiddlewareFunc, hs ...H
 func (f *SHandlers) Bind(app *appsrv.Application) {
 	for _, h := range f.handlers {
 		h.Bind(app)
+	}
+}
+
+func (f SHandlers) BindWithProcessTimeout(app *appsrv.Application, timeout time.Duration) {
+	for _, h := range f.handlers {
+		h.BindWithProcessTimeout(app, timeout)
 	}
 }
 
